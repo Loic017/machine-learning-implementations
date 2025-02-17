@@ -2,7 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def central_difference_approximation(function, x, idx, eps):
+def central_difference_approximation(
+    function, x, idx, eps
+):  # Not used in backprop, as chain rule is used instead
     x_up = x[idx] + eps
     x_down = x[idx] - eps
 
@@ -11,8 +13,8 @@ def central_difference_approximation(function, x, idx, eps):
 
 def get_gradient(loss_function, params, eps=1e-5):
     gradients = np.zeros_like(params)
-    for i, v in enumerate(params):
-        gradients[i] = central_difference_approximation(loss_function, params, i, eps)
+    # for i, v in enumerate(params):
+    #     gradients[i] = central_difference_approximation(loss_function, params, i, eps)
 
     return gradients
 
