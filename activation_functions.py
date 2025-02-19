@@ -57,8 +57,8 @@ class ReLU(Activation):
         self.output = np.maximum(0, x)
         return self.output
 
-    def backward(self):
-        return np.where(x > 0, 1, 0)
+    def backward(self, grad):
+        return grad * (self.output > 0)
 
 
 if __name__ == "__main__":
@@ -76,7 +76,7 @@ if __name__ == "__main__":
     relu_forward = relu.forward(x)
     relu_grad = relu.backward()
 
-    plt.plot(x, tanh_forward, label="relu")
-    plt.plot(x, tanh_backward, label="relu")
+    plt.plot(x, relu_forward, label="relu")
+    plt.plot(x, relu_grad, label="relu")
     plt.legend()
     plt.show()
