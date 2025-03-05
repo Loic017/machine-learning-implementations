@@ -28,7 +28,9 @@ class Linear(Layer):
         self.output_size = output_size
         self.activation = activation
 
-        self.weights = np.random.randn(output_size, input_size)
+        self.weights = np.random.randn(self.input_size, self.output_size) * np.sqrt(
+            2 / (self.input_size + self.output_size)
+        )
         self.bias = np.zeros((1, output_size))
 
     def __repr__(self):
@@ -36,7 +38,7 @@ class Linear(Layer):
 
     def forward(self, x):
         self.input = x
-        self.z = np.dot(x, self.weights.T)
+        self.z = np.dot(x, self.weights)
         # print(self.z.shape)
         self.z = self.z + self.bias
         # print(self.z.shape)
@@ -59,6 +61,7 @@ class Linear(Layer):
         # Step 1: Backprop through the activation function.
         # Compute the derivative of the activation function at the pre-activation values.
         activation_derivative = self.activation.backward(self.z)
+
         # Multiply element-wise with the gradient coming from the next layer.
         grad_pre_activation = output_grad * activation_derivative
 
@@ -66,24 +69,20 @@ class Linear(Layer):
         # The gradient for the weights is computed as the dot product of the transpose of the input
         # and the gradient from the pre-activation, averaged over the batch.
 
-        print(self.input.shape)
-        print(grad_pre_activation.shape)
-        print(f"weights shape: {self.weights.shape}\n")
         weights_grad = np.dot(self.input.T, grad_pre_activation)
         # The gradient for the bias is the average of the gradients from the pre-activation over the batch.
         bias_grad = np.sum(grad_pre_activation, axis=0, keepdims=True)
 
         # Step 3: Compute the gradient to propagate to the previous layer.
         # This is the dot product of the gradient from the pre-activation and the transpose of the weights.
-        next_grad = np.dot(grad_pre_activation, self.weights)
+        next_grad = np.dot(grad_pre_activation, self.weights.T)
 
         return next_grad, weights_grad, bias_grad
 
     def update(self, lr, weights_grad, bias_grad):
-        # weights_grad = np.mean(weights_grad, axis=0)
-        # bias_grad = np.mean(bias_grad, axis=0)
-        print(weights_grad.shape)
-        print(self.weights.shape)
+        # weights_grad = np.mean(weights_grad, axis=1)
+        # bias_grad = np.mean(bias_grad, axis=1)
+
         self.weights -= lr * weights_grad
         self.bias -= lr * bias_grad
 

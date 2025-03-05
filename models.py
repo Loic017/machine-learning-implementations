@@ -4,6 +4,9 @@ from loss_functions import mse
 from layers import Linear
 from activation_functions import ReLU, Sigmoid, Tanh
 
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
+
 
 class Model:
     def __init__(self, loss):
@@ -19,7 +22,7 @@ class Model:
     def forward(self, x):
         for layer in self.layers:
             x = layer.forward(x)
-            print(f"Forward pass - Layer: {layer}, Output shape: {x.shape}")
+            # print(f"Forward pass - Layer: {layer}, Output shape: {x.shape}")
         return x
 
     def backward(self, loss_grad):
@@ -48,15 +51,11 @@ class Model:
         loss_graph = []
         for epoch in range(epochs):
             running_loss = 0
-            # print(f"input shape {x.shape}")
             for i, batch in enumerate(x):
                 y_pred = self.forward(batch)
                 loss = self.loss(y[i], y_pred)
 
-                # print(y_pred.shape)
-                # print(y[i].shape)
-                # print(loss.shape)
-                loss_grad = self.loss(y, y_pred, grad=True)
+                loss_grad = self.loss(y[i], y_pred, grad=True)
                 weights_grads, bias_grads = self.backward(loss_grad)
                 self.update(lr, weights_grads, bias_grads)
 
@@ -73,52 +72,50 @@ class Model:
 
 if __name__ == "__main__":
     model = Model(mse)
-    model.add(
-        Linear(1, 16, Sigmoid())
-    )  # Input size is 1, first hidden layer size is 16
-    model.add(
-        Linear(16, 32, Sigmoid())
-    )  # First hidden layer size is 16, second hidden layer size is 32
-    model.add(
-        Linear(32, 64, Sigmoid())
-    )  # Second hidden layer size is 32, third hidden layer size is 64
-    model.add(
-        Linear(64, 32, Sigmoid())
-    )  # Third hidden layer size is 64, fourth hidden layer size is 32
-    model.add(
-        Linear(32, 16, Sigmoid())
-    )  # Fourth hidden layer size is 32, fifth hidden layer size is 16
-    model.add(
-        Linear(16, 8, Sigmoid())
-    )  # Fifth hidden layer size is 16, sixth hidden layer size is 8
-    model.add(
-        Linear(8, 1, Sigmoid())
-    )  # Sixth hidden layer size is 8, output layer size is 1
+    # Input layer
+    model.add(Linear(1, 4, Tanh()))  # Increase hidden size to 32
+
+    # Hidden layers
+    model.add(Linear(4, 8, ReLU()))
+    model.add(Linear(8, 16, ReLU()))
+    model.add(Linear(16, 8, ReLU()))
+    model.add(Linear(8, 4, ReLU()))
+
+    # Output layer
+    model.add(Linear(4, 1, Tanh()))
 
     print(model)
 
     # Generate sine wave data
-    x = np.linspace(0, 2 * np.pi, 2050)
-    x = x.reshape(-1, 1)
-    y = np.sin(x)
+    x = np.linspace(0, 1 * np.pi, 500).reshape(-1, 1)  # 10x more points
+    y = np.sin(x) + np.random.normal(0, 0.01, x.shape)  # Add slight noise
 
-    # split into train and test
-    x_test, x = np.split(x, [50])
-    y_test, y = np.split(y, [50])
+    # Alternative: Use Min-Max Scaling (range [-1,1])
+    scaler = MinMaxScaler(feature_range=(-1, 1))
+    x = scaler.fit_transform(x)
 
-    print(f"Shape before batching: {x.shape}")
+    # Split into train and test sets
+    x_train, x_test, y_train, y_test = train_test_split(
+        x, y, test_size=0.2, random_state=42
+    )
 
-    # shuffle x and y
-    indices = np.arange(x.shape[0])
-    np.random.shuffle(indices)
-    x = x[indices]
-    y = y[indices]
+    # Visualize data distribution
+    plt.scatter(x_train, y_train, label="Train", alpha=0.5)
+    plt.scatter(x_test, y_test, label="Test", alpha=0.5)
+    plt.legend()
+    plt.show()
 
-    # batch data into groups of 10
-    x = np.array(np.array_split(x, len(x) // 200))
-    y = np.array(np.array_split(y, len(y) // 200))
+    print(f"Shape before batching: {x_train.shape}")
 
-    print(f"Shape after batching: {x.shape}")
+    # Set batch size
+    batch_size = 24
+
+    # Ensure the training data is evenly divisible by batch size
+    num_batches = len(x_train) // batch_size
+    x_train = x_train[: num_batches * batch_size].reshape(num_batches, batch_size, -1)
+    y_train = y_train[: num_batches * batch_size].reshape(num_batches, batch_size, -1)
+
+    print(f"Shape after batching: {x_train.shape}")
 
     # # random dummy data
     # x = np.random.rand(100, 1)
@@ -128,11 +125,11 @@ if __name__ == "__main__":
     # x = np.array_split(x, 10)
     # y = np.array_split(y, 10)
 
-    print(f"Batch size: {len(x)}")
+    print(f"Batch size: {len(x_train)}")
     print(f"Number of samples: {len(x[0])}")
     print(f"Data shape: {x[0].shape}")
 
-    loss = model.fit(x, y, 100, 0.1)
+    loss = model.fit(x_train, y_train, 100, 0.01)
 
     plt.plot(loss)
     plt.show()

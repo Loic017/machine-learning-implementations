@@ -38,12 +38,14 @@ class LinearRegression(Layer):
         """
         # Step 1: Compute gradients with respect to weights and biases.
         # The gradient for the weights is computed as the dot product of the transpose of the input
-
-        output_grad = np.mean(output_grad, axis=1, keepdims=True)
-        weights_grad = np.mean(np.dot(self.input.T, output_grad))
+        # print("\nOutput Grad:", output_grad.shape)
+        output_grad = (output_grad) / self.input.shape[0]
+        # print("Output Grad Mean:", output_grad.shape)
+        weights_grad = (np.dot(self.input.T, output_grad)) / self.input.shape[0]
+        # print("Weights Grad:", weights_grad.shape)
 
         # The gradient for the bias is the average of the gradients from the pre-activation over the batch.
-        bias_grad = np.mean(np.sum(output_grad, axis=0, keepdims=True))
+        bias_grad = (np.sum(output_grad, axis=0, keepdims=True)) / self.input.shape[0]
 
         return weights_grad, bias_grad
 
@@ -52,9 +54,12 @@ class LinearRegression(Layer):
         self.bias -= lr * bias_grad
 
     def train(self, x_batched, y_batched, lr, epochs):
+        loss_list = []
         for epoch in range(epochs):
             running_loss = 0
-            for x, y in zip(x_batched, y_batched):
+            for i, x in enumerate(x_batched):
+                x = x.reshape(-1, 1)
+                y = y_batched[i]
                 y_pred = self.forward(x)
                 loss = self.loss_function(y, y_pred)
 
@@ -65,6 +70,9 @@ class LinearRegression(Layer):
                 running_loss += loss
 
             print(f"Epoch {epoch}: Loss {running_loss / len(x_batched)}")
+            loss_list.append(running_loss / len(x_batched))
+
+        return loss_list
 
     def predict(self, x):
         return self.forward(x)
@@ -116,7 +124,7 @@ if __name__ == "__main__":
     print(f"\nTraining the model with {n_batches} batches")
     print(f"Train input shape: {x_train_batches.shape}")
     print(f"Train output shape: {y_train_batches.shape}")
-    model.train(x_train, y_train, lr=0.01, epochs=6)
+    loss = model.train(x_train_batches, y_train_batches, lr=0.01, epochs=100)
 
     # Step 7: Make predictions on the test set
     print("\nMaking predictions on the test set")
@@ -143,3 +151,8 @@ if __name__ == "__main__":
 
     plt.show()
 
+    # Step 9: Plot Loss
+    fig, ax = plt.subplots(1, 1, figsize=(6, 5))
+    ax.plot(loss)
+    ax.set_title("Loss")
+    plt.show()
