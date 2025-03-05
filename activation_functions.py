@@ -42,7 +42,7 @@ class Tanh(Activation):
         self.output = (np.exp(x) - np.exp(-x)) / (np.exp(x) + np.exp(-x))
         return self.output
 
-    def backward(self, grad=1):
+    def backward(self, grad):
         return grad * (1 - self.output**2)
 
 
@@ -54,11 +54,13 @@ class ReLU(Activation):
         return "relu"
 
     def forward(self, x):
+        # print(f"Input to ReLU forward: {x}")  # Debugging statement
         self.output = np.maximum(0, x)
+        # print(f"Output from ReLU forward: {self.output}")  # Debugging statement
         return self.output
 
     def backward(self, grad):
-        return grad * (self.output > 0)
+        return grad * np.where(self.output > 0, 1, 0)
 
 
 if __name__ == "__main__":
