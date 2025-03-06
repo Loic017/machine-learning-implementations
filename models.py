@@ -87,7 +87,7 @@ if __name__ == "__main__":
     print(model)
 
     # Generate sine wave data
-    x = np.linspace(0, 1 * np.pi, 500).reshape(-1, 1)  # 10x more points
+    x = np.linspace(0, 2 * np.pi, 500).reshape(-1, 1)  # 10x more points
     y = np.sin(x) + np.random.normal(0, 0.01, x.shape)  # Add slight noise
 
     # Alternative: Use Min-Max Scaling (range [-1,1])
@@ -129,7 +129,7 @@ if __name__ == "__main__":
     print(f"Number of samples: {len(x[0])}")
     print(f"Data shape: {x[0].shape}")
 
-    loss = model.fit(x_train, y_train, 100, 0.01)
+    loss = model.fit(x_train, y_train, 300, 0.001)
 
     plt.plot(loss)
     plt.show()

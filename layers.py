@@ -28,9 +28,8 @@ class Linear(Layer):
         self.output_size = output_size
         self.activation = activation
 
-        self.weights = np.random.randn(self.input_size, self.output_size) * np.sqrt(
-            2 / (self.input_size + self.output_size)
-        )
+        self.weights = np.random.randn(self.input_size, self.output_size)
+        # * np.sqrt(    2 / (self.input_size + self.output_size))
         self.bias = np.zeros((1, output_size))
 
     def __repr__(self):
@@ -60,10 +59,10 @@ class Linear(Layer):
 
         # Step 1: Backprop through the activation function.
         # Compute the derivative of the activation function at the pre-activation values.
-        activation_derivative = self.activation.backward(self.z)
+        grad_pre_activation = self.activation.backward(output_grad)
 
-        # Multiply element-wise with the gradient coming from the next layer.
-        grad_pre_activation = output_grad * activation_derivative
+        # # Multiply element-wise with the gradient coming from the next layer.
+        # grad_pre_activation = output_grad * activation_derivative
 
         # Step 2: Compute gradients with respect to weights and biases.
         # The gradient for the weights is computed as the dot product of the transpose of the input

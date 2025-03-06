@@ -39,7 +39,8 @@ class Tanh(Activation):
         return "tanh"
 
     def forward(self, x):
-        self.output = (np.exp(x) - np.exp(-x)) / (np.exp(x) + np.exp(-x))
+        # self.output = (np.exp(x) - np.exp(-x)) / (np.exp(x) + np.exp(-x))
+        self.output = np.tanh(x)
         return self.output
 
     def backward(self, grad):

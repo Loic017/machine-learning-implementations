@@ -55,6 +55,7 @@ class LinearRegression(Layer):
 
     def train(self, x_batched, y_batched, lr, epochs):
         loss_list = []
+        line_history = []
         for epoch in range(epochs):
             running_loss = 0
             for i, x in enumerate(x_batched):
@@ -69,10 +70,12 @@ class LinearRegression(Layer):
 
                 running_loss += loss
 
+            line_history.append([self.weights[0][0], self.bias[0][0]])
+
             print(f"Epoch {epoch}: Loss {running_loss / len(x_batched)}")
             loss_list.append(running_loss / len(x_batched))
 
-        return loss_list
+        return loss_list, line_history
 
     def predict(self, x):
         return self.forward(x)
@@ -124,7 +127,9 @@ if __name__ == "__main__":
     print(f"\nTraining the model with {n_batches} batches")
     print(f"Train input shape: {x_train_batches.shape}")
     print(f"Train output shape: {y_train_batches.shape}")
-    loss = model.train(x_train_batches, y_train_batches, lr=0.01, epochs=100)
+    loss, line_history = model.train(
+        x_train_batches, y_train_batches, lr=0.01, epochs=100
+    )
 
     # Step 7: Make predictions on the test set
     print("\nMaking predictions on the test set")
