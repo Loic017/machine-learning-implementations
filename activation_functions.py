@@ -43,7 +43,7 @@ class Tanh(Activation):
         self.output = np.tanh(x)
         return self.output
 
-    def backward(self, grad):
+    def backward(self, grad=1):
         return grad * (1 - self.output**2)
 
 
@@ -55,13 +55,37 @@ class ReLU(Activation):
         return "relu"
 
     def forward(self, x):
-        # print(f"Input to ReLU forward: {x}")  # Debugging statement
+        self.x = x
         self.output = np.maximum(0, x)
-        # print(f"Output from ReLU forward: {self.output}")  # Debugging statement
         return self.output
 
-    def backward(self, grad):
-        return grad * np.where(self.output > 0, 1, 0)
+    def backward(self, grad=1):
+        return grad * (self.x > 0)
+
+
+# https://shivammehta25.github.io/posts/deriving-categorical-cross-entropy-and-softmax/#softmax
+# https://www.youtube.com/watch?v=M59JElEPgIg
+# https://www.youtube.com/watch?v=KpKog-L9veg&t=550s&pp=ygUbc29mdG1heCBhY3RpdmF0aW9uIGZ1bmN0aW9u
+# class SoftMax(Activation):
+#     def __init__(self):
+#         super().__init__()
+
+#     def __repr__(self):
+#         return "softmax"
+
+#     def forward(self, x):
+#         x_stable = x - np.max(x, axis=-1, keepdims=True)
+#         exp = np.exp(x_stable)
+#         self.output = exp / np.sum(exp, axis=-1, keepdims=True)
+#         return self.output
+
+#     def backward(self, grad=1):
+#         # https://stackoverflow.com/questions/40575841/numpy-calculate-the-derivative-of-the-softmax-function
+#         # https://github.com/eliben/deep-learning-samples/blob/main/softmax/softmax.py
+
+#         SM = self.output.reshape((-1, 1))
+#         jac = np.diagflat(self.output) - np.dot(SM, SM.T)
+#         return grad
 
 
 if __name__ == "__main__":
@@ -79,7 +103,38 @@ if __name__ == "__main__":
     relu_forward = relu.forward(x)
     relu_grad = relu.backward()
 
-    plt.plot(x, relu_forward, label="relu")
-    plt.plot(x, relu_grad, label="relu")
-    plt.legend()
+    softmax = SoftMax()
+    softmax_forward = softmax.forward(x)
+    softmax_backward = softmax.backward()
+
+    fig, axes = plt.subplots(2, 2, figsize=(10, 8))
+    axes[0, 0].plot(x, sigmoid_forward)
+    axes[0, 0].set_title("Sigmoid")
+    axes[0, 0].set_xlabel("x")
+    axes[0, 0].set_ylabel("Sigmoid( and derivative) and derivative")
+    axes[0, 0].grid()
+    axes[0, 0].plot(x, sigmoid_backward)
+
+    axes[0, 1].plot(x, tanh_forward)
+    axes[0, 1].set_title("Tanh")
+    axes[0, 1].set_xlabel("x")
+    axes[0, 1].set_ylabel("Tanh(x) and derivative")
+    axes[0, 1].grid()
+    axes[0, 1].plot(x, tanh_backward)
+
+    axes[1, 0].plot(x, relu_forward)
+    axes[1, 0].set_title("ReLU")
+    axes[1, 0].set_xlabel("x")
+    axes[1, 0].set_ylabel("ReLU(x) and derivative")
+    axes[1, 0].grid()
+    axes[1, 0].plot(x, relu_grad)
+
+    axes[1, 1].plot(x, softmax_forward)
+    axes[1, 1].set_title("Softmax")
+    axes[1, 1].set_xlabel("x")
+    axes[1, 1].set_ylabel("Softmax(x)")
+    axes[1, 1].grid()
+    axes[1, 1].plot(x, softmax_backward)
+
+    plt.tight_layout()
     plt.show()

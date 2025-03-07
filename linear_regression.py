@@ -41,7 +41,7 @@ class LinearRegression(Layer):
         # print("\nOutput Grad:", output_grad.shape)
         output_grad = (output_grad) / self.input.shape[0]
         # print("Output Grad Mean:", output_grad.shape)
-        weights_grad = (np.dot(self.input.T, output_grad)) / self.input.shape[0]
+        weights_grad = np.dot(self.input.T, output_grad)
         # print("Weights Grad:", weights_grad.shape)
 
         # The gradient for the bias is the average of the gradients from the pre-activation over the batch.
@@ -55,7 +55,7 @@ class LinearRegression(Layer):
 
     def train(self, x_batched, y_batched, lr, epochs):
         loss_list = []
-        line_history = []
+        param_log = []
         for epoch in range(epochs):
             running_loss = 0
             for i, x in enumerate(x_batched):
@@ -70,12 +70,12 @@ class LinearRegression(Layer):
 
                 running_loss += loss
 
-            line_history.append([self.weights[0][0], self.bias[0][0]])
+            param_log.append((self.weights[0][0], self.bias[0][0], loss))
 
             print(f"Epoch {epoch}: Loss {running_loss / len(x_batched)}")
             loss_list.append(running_loss / len(x_batched))
 
-        return loss_list, line_history
+        return loss_list, param_log
 
     def predict(self, x):
         return self.forward(x)

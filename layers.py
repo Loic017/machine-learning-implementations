@@ -28,8 +28,9 @@ class Linear(Layer):
         self.output_size = output_size
         self.activation = activation
 
-        self.weights = np.random.randn(self.input_size, self.output_size)
-        # * np.sqrt(    2 / (self.input_size + self.output_size))
+        self.weights = np.random.randn(self.input_size, self.output_size) * np.sqrt(
+            2.0 / self.input_size
+        )
         self.bias = np.zeros((1, output_size))
 
     def __repr__(self):
@@ -37,19 +38,20 @@ class Linear(Layer):
 
     def forward(self, x):
         self.input = x
-        self.z = np.dot(x, self.weights)
-        # print(self.z.shape)
-        self.z = self.z + self.bias
-        # print(self.z.shape)
+        self.z = np.dot(x, self.weights) + self.bias
+
+        if self.activation is None:
+            return self.z
+
         self.a = self.activation.forward(x=self.z)
         return self.a
 
-    def backward(self, output_grad):
+    def backward(self, prior_layer_grad):
         """
         Performs backpropagation on the layer.
 
         Args:
-            output_grad (np.ndarray): grad_output (np.ndarray): Gradient of the loss with respect to the layer's output.
+            prior_layer_grad (np.ndarray): Gradient of the loss with respect to the layer's output.
 
         Returns:
             next_grad (np.ndarray): Gradient of the loss with respect to the layer's input.
@@ -57,33 +59,48 @@ class Linear(Layer):
             bias_grad (np.ndarray): Gradient of the loss with respect to the bias.
         """
 
-        # Step 1: Backprop through the activation function.
-        # Compute the derivative of the activation function at the pre-activation values.
-        grad_pre_activation = self.activation.backward(output_grad)
+        # print(self.__repr__())
 
-        # # Multiply element-wise with the gradient coming from the next layer.
-        # grad_pre_activation = output_grad * activation_derivative
+        # Step 1: (gradient of activation with respect to z) * (gradient of loss with respect to activation)
+        if self.activation is None:
+            grad_activation = prior_layer_grad
+        else:
+            grad_activation = self.activation.backward(prior_layer_grad)
 
-        # Step 2: Compute gradients with respect to weights and biases.
-        # The gradient for the weights is computed as the dot product of the transpose of the input
-        # and the gradient from the pre-activation, averaged over the batch.
+        # print("grad_activation ", grad_activation.shape)
+        # print("self.input ", self.input.shape, " self.input.T ", self.input.T.shape)
 
-        weights_grad = np.dot(self.input.T, grad_pre_activation)
-        # The gradient for the bias is the average of the gradients from the pre-activation over the batch.
-        bias_grad = np.sum(grad_pre_activation, axis=0, keepdims=True)
+        # Step 2: (gradient of z with respect to weights) * (gradient of loss with respect to z)
+        weights_grad = np.dot(self.input.T, grad_activation)
 
-        # Step 3: Compute the gradient to propagate to the previous layer.
-        # This is the dot product of the gradient from the pre-activation and the transpose of the weights.
-        next_grad = np.dot(grad_pre_activation, self.weights.T)
+        # Step 3: (gradient of z with respect to bias) * (gradient of loss with respect to z)
+        bias_grad = np.mean(grad_activation, axis=0)
+
+        # Step 4: Propagate gradient to the previous layer
+        next_grad = np.dot(grad_activation, self.weights.T)
 
         return next_grad, weights_grad, bias_grad
 
     def update(self, lr, weights_grad, bias_grad):
-        # weights_grad = np.mean(weights_grad, axis=1)
-        # bias_grad = np.mean(bias_grad, axis=1)
+        weights_grad = weights_grad / self.input.shape[0]
+        bias_grad = bias_grad / self.input.shape[0]
 
         self.weights -= lr * weights_grad
         self.bias -= lr * bias_grad
+
+
+class Flatten(Layer):
+    def __init__(self):
+        super().__init__()
+
+    def __repr__(self):
+        return "Flatten Layer"
+
+    def forward(self, x):
+        return NotImplementedError
+
+    def backward(self, prior_layer_grad):
+        return NotImplementedError
 
 
 if __name__ == "__main__":

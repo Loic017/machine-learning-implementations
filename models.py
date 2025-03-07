@@ -1,8 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from matplotlib.animation import PillowWriter
+
 from loss_functions import mse
 from layers import Linear
 from activation_functions import ReLU, Sigmoid, Tanh
+
+from visualise import visualize_predictions_over_epochs
 
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
@@ -19,10 +24,23 @@ class Model:
     def add(self, layer):
         self.layers.append(layer)
 
-    def forward(self, x):
+    def forward(self, x, loggings=False):
+        """
+        Forward pass through the network
+
+        Args:
+            x (np.ndarray): Input data in the shape [batch_size, features]
+
+        Returns:
+            x (np.ndarray): Output data in the shape [batch_size, features]
+
+        """
+        if loggings:
+            print(f"input shape {x.shape}")
         for layer in self.layers:
             x = layer.forward(x)
-            # print(f"Forward pass - Layer: {layer}, Output shape: {x.shape}")
+        if loggings:
+            print(f"output shape {x.shape}")
         return x
 
     def backward(self, loss_grad):
@@ -31,8 +49,6 @@ class Model:
         prior_loss = loss_grad
         for layer in reversed(self.layers):
             next_grad, weights_grad, bias_grad = layer.backward(prior_loss)
-
-            # print(f"Backward pass - Layer: {layer}, Gradient shape: {next_grad.shape}")
 
             weights_grads.append(weights_grad)
             bias_grads.append(bias_grad)
@@ -47,100 +63,108 @@ class Model:
         for i, layer in enumerate(self.layers):
             layer.update(lr, weights_grads[i], bias_grads[i])
 
-    def fit(self, x, y, epochs, lr):
+    def fit(
+        self,
+        x,
+        y,
+        epochs,
+        lr,
+        logging_predictions=False,
+        test_set_logging: np.ndarray = None,
+    ):
         loss_graph = []
+        all_train_predictions, all_test_predictions = [], []
         for epoch in range(epochs):
             running_loss = 0
+            train_epoch_predictions, test_epoch_predictions = [], []
             for i, batch in enumerate(x):
-                y_pred = self.forward(batch)
-                loss = self.loss(y[i], y_pred)
+                curr_y = y[i]
+                y_hat = self.forward(batch)
 
-                loss_grad = self.loss(y[i], y_pred, grad=True)
+                if y_hat.shape != y[i].shape:
+                    curr_y = curr_y.reshape(y_hat.shape)
+
+                loss = self.loss(curr_y, y_hat)
+
+                loss_grad = self.loss(curr_y, y_hat, grad=True)
                 weights_grads, bias_grads = self.backward(loss_grad)
                 self.update(lr, weights_grads, bias_grads)
 
+                train_epoch_predictions.append(y_hat)
+
                 running_loss += loss
+
+            if logging_predictions:
+                for i, batch in enumerate(test_set_logging):
+                    y_hat = self.forward(batch)
+                    test_epoch_predictions.append(y_hat)
+
+            if logging_predictions:
+                all_train_predictions.append(train_epoch_predictions)
+                all_test_predictions.append(test_epoch_predictions)
 
             print(f"Epoch {epoch}, Loss {running_loss / len(batch)}")
             loss_graph.append(running_loss / len(batch))
 
-        return loss_graph
+        if logging_predictions:
+            return (
+                loss_graph,
+                np.array(all_train_predictions),
+                np.array(all_test_predictions),
+            )
+        else:
+            return loss_graph
 
     def predict(self, x):
         return self.forward(x)
 
 
 if __name__ == "__main__":
+    # Create Model
     model = Model(mse)
-    # Input layer
-    model.add(Linear(1, 4, Tanh()))  # Increase hidden size to 32
-
-    # Hidden layers
-    model.add(Linear(4, 8, ReLU()))
-    model.add(Linear(8, 16, ReLU()))
-    model.add(Linear(16, 8, ReLU()))
-    model.add(Linear(8, 4, ReLU()))
-
-    # Output layer
+    model.add(Linear(1, 4, Tanh()))
     model.add(Linear(4, 1, Tanh()))
-
-    print(model)
+    print(f"Model: {model}")
 
     # Generate sine wave data
-    x = np.linspace(0, 2 * np.pi, 500).reshape(-1, 1)  # 10x more points
-    y = np.sin(x) + np.random.normal(0, 0.01, x.shape)  # Add slight noise
-
-    # Alternative: Use Min-Max Scaling (range [-1,1])
+    x = np.linspace(0, 1 * np.pi, 500).reshape(-1, 1)  # 10x more points
+    y = np.sin(x) + np.random.normal(0, 0.02, x.shape)  # Add slight noise
     scaler = MinMaxScaler(feature_range=(-1, 1))
     x = scaler.fit_transform(x)
-
-    # Split into train and test sets
     x_train, x_test, y_train, y_test = train_test_split(
         x, y, test_size=0.2, random_state=42
     )
 
-    # Visualize data distribution
-    plt.scatter(x_train, y_train, label="Train", alpha=0.5)
-    plt.scatter(x_test, y_test, label="Test", alpha=0.5)
-    plt.legend()
-    plt.show()
+    # Get shape [samples, batch_size, features] but only stochastic gradient descent
+    x_train = x_train.reshape(-1, 1, 1)
+    y_train = y_train.reshape(-1, 1, 1)
+    x_test = x_test.reshape(-1, 1, 1)
+    y_test = y_test.reshape(-1, 1, 1)
+    print(f"Train shape: {x_train.shape}, {y_train.shape}")
+    print(f"Test shape: {x_test.shape}, {y_test.shape}")
 
-    print(f"Shape before batching: {x_train.shape}")
-
-    # Set batch size
-    batch_size = 24
-
-    # Ensure the training data is evenly divisible by batch size
-    num_batches = len(x_train) // batch_size
-    x_train = x_train[: num_batches * batch_size].reshape(num_batches, batch_size, -1)
-    y_train = y_train[: num_batches * batch_size].reshape(num_batches, batch_size, -1)
-
-    print(f"Shape after batching: {x_train.shape}")
-
-    # # random dummy data
-    # x = np.random.rand(100, 1)
-    # y = np.random.rand(100, 1)
-
-    # # batch data into groups of 10
-    # x = np.array_split(x, 10)
-    # y = np.array_split(y, 10)
-
-    print(f"Batch size: {len(x_train)}")
-    print(f"Number of samples: {len(x[0])}")
-    print(f"Data shape: {x[0].shape}")
-
-    loss = model.fit(x_train, y_train, 300, 0.001)
-
+    # Train Model
+    lr = 0.001
+    loss, train_predictions, test_predictions = model.fit(
+        x_train, y_train, 150, lr, logging_predictions=True, test_set_logging=x_test
+    )
     plt.plot(loss)
     plt.show()
 
-    print(f"Test Size: {len(x_test)}")
+    visualize_predictions_over_epochs(
+        f"visuals/train_sine_wave_lr{lr}.gif", train_predictions, x_train
+    )
+    visualize_predictions_over_epochs(
+        f"visuals/test_sine_wave_{lr}.gif", test_predictions, x_test
+    )
+
+    # Test Model
     predictions = []
     for batch in x_test:
         predictions.append(model.predict(batch))
 
     predictions = np.array(predictions).reshape(-1, 1)
-    plt.scatter(x_test, predictions, label="Predictions")
-    plt.scatter(x_test, y_test, label="Ground truth")
+    plt.scatter(x_test, predictions, label="yhat")
+    plt.scatter(x_test, y_test, label="y")
     plt.legend()
     plt.show()
