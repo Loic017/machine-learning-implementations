@@ -4,8 +4,18 @@ from matplotlib.animation import PillowWriter
 
 
 def visualize_predictions_over_epochs(file_name, all_predictions, x_set):
-    all_predictions = all_predictions.squeeze(axis=(-1, -2))
-    num_epochs = all_predictions.shape[0]
+
+    ###### NEED TO FIX
+    # if len(all_predictions.shape) > 2:
+    #     all_predictions = all_predictions.reshape(all_predictions.shape[0], -1)
+
+    # if all_predictions.shape[-1] == 1:
+    #     all_predictions = all_predictions.squeeze(axis=-1)
+
+    # num_epochs = all_predictions.shape[0]
+
+    # if len(x_set) != all_predictions.shape[1]:
+    #     x_set = x_set[: all_predictions.shape[1]]
 
     fig, ax = plt.subplots()
 

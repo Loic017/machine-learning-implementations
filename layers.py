@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import loss_functions as ls
 import activation_functions as af
 
+from utils import assert_shape
+
 
 class Layer:  # from abc import ABC
     def __init__(self):
@@ -37,14 +39,23 @@ class Linear(Layer):
         return f"Linear Layer (in {self.input_size}, out {self.output_size}), (activation {self.activation})"
 
     def forward(self, x):
+        """
+        Performs forward pass on the layer.
+        """
+        batch_size = x.shape[0]
         self.input = x
+        # print(f"Weights shape {self.weights.shape}")
+        # print(f"x shape {x.shape}")
+        assert_shape(arr=x, expected_shape=(batch_size, self.input_size))
+
         self.z = np.dot(x, self.weights) + self.bias
+        assert_shape(arr=self.z, expected_shape=(batch_size, self.output_size))
 
-        if self.activation is None:
-            return self.z
-
-        self.a = self.activation.forward(x=self.z)
-        return self.a
+        if self.activation is not None:
+            self.a = self.activation.forward(x=self.z)
+            assert_shape(arr=self.a, expected_shape=(batch_size, self.output_size))
+            return self.a
+        return self.z
 
     def backward(self, prior_layer_grad):
         """
@@ -62,6 +73,7 @@ class Linear(Layer):
         # print(self.__repr__())
 
         # Step 1: (gradient of activation with respect to z) * (gradient of loss with respect to activation)
+        # The multiplication is done within the backward method of the activation function
         if self.activation is None:
             grad_activation = prior_layer_grad
         else:
@@ -74,7 +86,7 @@ class Linear(Layer):
         weights_grad = np.dot(self.input.T, grad_activation)
 
         # Step 3: (gradient of z with respect to bias) * (gradient of loss with respect to z)
-        bias_grad = np.mean(grad_activation, axis=0)
+        bias_grad = np.sum(grad_activation, axis=0)
 
         # Step 4: Propagate gradient to the previous layer
         next_grad = np.dot(grad_activation, self.weights.T)

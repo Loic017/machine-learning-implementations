@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 
 # MSE
 def mse(y_true, y_hat, grad=False):
+    if hasattr(y_true, "detach") and hasattr(y_true, "numpy"):
+        y_true = y_true.detach().numpy()
+
     if grad:
         return -2 * (y_true - y_hat)
     return np.mean((y_true - y_hat) ** 2)
@@ -17,19 +20,39 @@ def mse(y_true, y_hat, grad=False):
 # https://shivammehta25.github.io/posts/deriving-categorical-cross-entropy-and-softmax/#softmax
 
 
-# def binary_cross_entropy(y_true, y_hat, grad=False):
-#     epsilon = 1e-12
-#     y_hat = np.clip(y_hat, epsilon, 1 - epsilon)
-#     if grad:
-#         return (y_hat - y_true) / (y_hat * (1 - y_hat))
-#     return (-1 / np.size(y_true)) * np.sum(
-#         y_true * np.log(y_hat) + (1 - y_true) * np.log(1 - y_hat)
-#     )
+def binary_cross_entropy(y_true, y_hat, grad=False):
+    epsilon = 1e-12
+    y_hat = np.clip(y_hat, epsilon, 1 - epsilon)
+    if grad:
+        return (y_hat - y_true) / (y_hat * (1 - y_hat))
+    return (-1 / np.size(y_true)) * np.sum(
+        y_true * np.log(y_hat) + (1 - y_true) * np.log(1 - y_hat)
+    )
 
 
-# def multi_cross_entropy(y_true, y_hat, grad=False):
-#     epsilon = 1e-15
-#     y_hat = np.clip(y_hat, epsilon, 1 - epsilon)
-#     if grad:
-#         return y_true - y_hat
-#     return np.mean(-np.sum(y_true * np.log(y_hat), axis=1))
+# Softmax(xi​)=∑j​exp(xj​)exp(xi​)​
+def softmax(x):
+    # print("x", x)
+    x = x - np.max(x, axis=1, keepdims=True)
+    exp_x = np.exp(x)
+    return exp_x / np.sum(exp_x, axis=1, keepdims=True)
+
+
+def multi_cross_entropy(y_true, y_hat, grad=False, reduce="mean", softmax_enable=True):
+    epsilon = 1e-20
+    y_hat = np.clip(y_hat, epsilon, 1 - epsilon)
+
+    if softmax_enable:
+        y_hat = softmax(y_hat)
+
+    output = -np.sum(y_true * np.log(y_hat), axis=1)
+
+    if grad:
+        return y_hat - y_true
+
+    if reduce == "mean":
+        return np.mean(output)
+    if reduce == "sum":
+        return np.sum(output)
+    if reduce is None:
+        return output
