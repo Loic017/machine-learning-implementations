@@ -207,6 +207,10 @@ class Model:
                 running_val_loss = 0
                 for batch in val_loader:
                     x_val, y_val = batch
+
+                    x_val = x_val.detach().numpy()
+                    y_val = y_val.detach().numpy()
+
                     y_hat = self.forward(x_val)
                     if y_hat.shape != y_val.shape:
                         y_val = one_hot_target(y_val, y_hat.shape)
