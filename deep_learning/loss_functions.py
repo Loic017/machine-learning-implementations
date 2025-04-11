@@ -4,12 +4,10 @@ import matplotlib.pyplot as plt
 
 # MSE
 def mse(y_true, y_hat, grad=False):
-    if hasattr(y_true, "detach") and hasattr(y_true, "numpy"):
-        y_true = y_true.detach().numpy()
-
     if grad:
-        return -2 * (y_true - y_hat)
-    return np.mean((y_true - y_hat) ** 2)
+        batch_size = y_hat.shape[0]
+        return (2 / batch_size) * (y_hat - y_true)
+    return np.mean((y_hat - y_true) ** 2)
 
 
 # Cross-entropy

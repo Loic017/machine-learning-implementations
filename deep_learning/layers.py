@@ -31,7 +31,7 @@ class Linear(Layer):
         self.activation = activation
 
         self.weights = np.random.randn(self.input_size, self.output_size) * np.sqrt(
-            2.0 / self.input_size
+            2 / self.input_size
         )
         self.bias = np.zeros((1, output_size))
 
@@ -94,8 +94,9 @@ class Linear(Layer):
         return next_grad, weights_grad, bias_grad
 
     def update(self, lr, weights_grad, bias_grad):
-        weights_grad = weights_grad / self.input.shape[0]
-        bias_grad = bias_grad / self.input.shape[0]
+        # Average the gradients over the batch size
+        weights_grad /= self.input.shape[0]
+        bias_grad /= self.input.shape[0]
 
         self.weights -= lr * weights_grad
         self.bias -= lr * bias_grad

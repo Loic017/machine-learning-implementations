@@ -63,6 +63,23 @@ class ReLU(Activation):
         return grad * (self.x > 0)
 
 
+class LeakyReLU(Activation):
+    def __init__(self, alpha=0.01):
+        super().__init__()
+        self.alpha = alpha
+
+    def __repr__(self):
+        return "leaky_relu"
+
+    def forward(self, x):
+        self.x = x
+        self.output = np.where(x > 0, x, self.alpha * x)
+        return self.output
+
+    def backward(self, grad=1):
+        return grad * np.where(self.x > 0, 1, self.alpha)
+
+
 # https://shivammehta25.github.io/posts/deriving-categorical-cross-entropy-and-softmax/#softmax
 # https://www.youtube.com/watch?v=M59JElEPgIg
 # https://www.youtube.com/watch?v=KpKog-L9veg&t=550s&pp=ygUbc29mdG1heCBhY3RpdmF0aW9uIGZ1bmN0aW9u

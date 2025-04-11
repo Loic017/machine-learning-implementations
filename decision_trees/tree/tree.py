@@ -1,4 +1,4 @@
-from .node import Node
+from node import Node
 import numpy as np
 from collections import Counter
 
@@ -6,11 +6,11 @@ from collections import Counter
 class Tree:
     def __init__(
         self,
-        split_method: function,
-        max_depth=None,
-        min_samples_split=2,
+        split_method,
+        max_depth: int = None,
+        min_samples_split: int = 2,
         # min_samples_leaf=1,
-        num_features=None,
+        num_features: int = None,
     ):
         self.split_method = split_method
         self.max_depth = max_depth
@@ -30,7 +30,7 @@ class Tree:
         else:
             self.num_features = min(X.shape[1], self.num_features)
 
-        return self
+        self.root = self._build_tree(X, y, 0)
 
     def _build_tree(self, X, y, depth=0):
         if self.get_depth() >= self.max_depth:

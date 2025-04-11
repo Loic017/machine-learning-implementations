@@ -94,6 +94,7 @@ class Model:
         train_data: tuple[np.ndarray, np.ndarray],
         epochs,
         lr,
+        batch_size,
         validation_data: tuple[np.ndarray, np.ndarray] = None,
         logging_predictions=False,
         test_set_logging: np.ndarray = None,
@@ -133,7 +134,6 @@ class Model:
         }
         all_train_predictions, all_test_predictions = [], []
 
-        batch_size = 32
         dataloader = DataLoader(
             dataset=list(zip(x, y)),
             batch_size=batch_size,
@@ -151,6 +151,14 @@ class Model:
             print(f"Training epoch {epoch}")
             for batch in dataloader:
                 x, y = batch
+
+                x = x.detach().numpy()
+                y = y.detach().numpy()
+
+                assert_shape(
+                    arr=x,
+                    expected_shape=(batch_size, self.layers[0].input_size),
+                )
 
                 # FORWARD PASS -> Expects shape [batch_size, features]
                 y_hat = self.forward(x)
@@ -227,7 +235,7 @@ class Model:
         Returns:
             yhat (np.ndarray): Output data in the shape [batch_size, features]
         """
-        x = np.expand_dims(x, axis=0)
+        # x = np.expand_dims(x, axis=0)
         return self.forward(x)
 
 
@@ -256,11 +264,12 @@ if __name__ == "__main__":
     print(f"Test shape: {x_test.shape}, {y_test.shape}")
 
     # Train Model
-    lr = 0.001
+    lr = 0.5
     loss, train_predictions, test_predictions = model.fit(
         (x_train, y_train),
         100,
         lr,
+        batch_size=32,
         logging_predictions=True,
         test_set_logging=x_test,
     )
@@ -278,17 +287,17 @@ if __name__ == "__main__":
     )
     test_predictions_reshaped = test_predictions.reshape(test_predictions.shape[0], -1)
 
-    visualize_predictions_over_epochs(
-        f"visuals/train_sine_wave_lr{lr}.gif", train_predictions, x_train
-    )
-    visualize_predictions_over_epochs(
-        f"visuals/test_sine_wave_{lr}.gif", test_predictions, x_test
-    )
+    # visualize_predictions_over_epochs(
+    #     f"visuals/train_sine_wave_lr{lr}.gif", train_predictions, x_train
+    # )
+    # visualize_predictions_over_epochs(
+    #     f"visuals/test_sine_wave_{lr}.gif", test_predictions, x_test
+    # )
 
     # Test Model
     predictions = []
     for batch in x_test:
-        predictions.append(model.predict(batch))
+        predictions.append(model.predict(np.expand_dims(batch, axis=0)))
 
     predictions = np.array(predictions).reshape(-1, 1)
     plt.scatter(x_test, predictions, label="yhat")
