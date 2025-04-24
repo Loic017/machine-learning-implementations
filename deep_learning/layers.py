@@ -102,6 +102,62 @@ class Linear(Layer):
         self.bias -= lr * bias_grad
 
 
+class Conv2d(Layer):
+    def __init__(
+        self,
+        input_size,
+        output_size,
+        kernel_size,
+        activation,
+        stride=1,
+        padding=0,
+        groups=1,
+    ):
+        super().__init__()
+        self.input_size = input_size
+        self.output_size = output_size
+        self.kernel_size_h, self.kernel_size_w = kernel_size
+        self.activation = activation
+        self.stride = stride
+        self.padding = padding
+        self.groups = groups
+
+        self.weights = np.random.randn(
+            self.output_size,
+            self.input_size / self.groups,
+            self.kernel_size_h,
+            self.kernel_size_w,
+        ) * np.sqrt(2 / (self.input_size * self.kernel_size_h * self.kernel_size_w))
+
+        self.bias = np.zeros((1, self.output_size, 1, 1))
+
+    def __repr__(self):
+        return "Conv2d Layer"
+
+    def forward(self, x):
+        return NotImplementedError
+
+    def backward(self, prior_layer_grad):
+        return NotImplementedError
+
+
+class MaxPool2d(Layer):
+    def __init__(self, kernel_size, stride=1, padding=0):
+        super().__init__()
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = padding
+
+    def __repr__(self):
+        return "MaxPool2d Layer"
+
+    def forward(self, x):
+        return NotImplementedError
+
+    def backward(self, prior_layer_grad):
+        return prior_layer_grad  # Is not learnable, so skip the backward pass
+
+
 class Flatten(Layer):
     def __init__(self):
         super().__init__()
@@ -110,10 +166,10 @@ class Flatten(Layer):
         return "Flatten Layer"
 
     def forward(self, x):
-        return NotImplementedError
+        return x.reshape(x.shape[0], -1)
 
     def backward(self, prior_layer_grad):
-        return NotImplementedError
+        return prior_layer_grad # Is not learnable, so skip the backward pass
 
 
 if __name__ == "__main__":

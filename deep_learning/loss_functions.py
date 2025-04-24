@@ -30,14 +30,16 @@ def binary_cross_entropy(y_true, y_hat, grad=False):
 
 # Softmax(xi​)=∑j​exp(xj​)exp(xi​)​
 def softmax(x):
-    # print("x", x)
     x = x - np.max(x, axis=1, keepdims=True)
     exp_x = np.exp(x)
     return exp_x / np.sum(exp_x, axis=1, keepdims=True)
 
 
-def multi_cross_entropy(y_true, y_hat, grad=False, reduce="mean", softmax_enable=True):
-    epsilon = 1e-20
+def multi_cross_entropy(
+    y_true, y_hat, grad=False, reduce="mean", softmax_enable=True, clip_norm=0.5
+):
+
+    epsilon = 1e-12
     y_hat = np.clip(y_hat, epsilon, 1 - epsilon)
 
     if softmax_enable:
@@ -46,11 +48,14 @@ def multi_cross_entropy(y_true, y_hat, grad=False, reduce="mean", softmax_enable
     output = -np.sum(y_true * np.log(y_hat), axis=1)
 
     if grad:
-        return y_hat - y_true
+        grad_output = y_hat - y_true
+        return grad_output
 
     if reduce == "mean":
         return np.mean(output)
-    if reduce == "sum":
+    elif reduce == "sum":
         return np.sum(output)
-    if reduce is None:
+    elif reduce is None:
         return output
+    else:
+        raise ValueError("Invalid reduce method. Use 'mean', 'sum', or None.")

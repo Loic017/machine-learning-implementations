@@ -120,9 +120,9 @@ if __name__ == "__main__":
     relu_forward = relu.forward(x)
     relu_grad = relu.backward()
 
-    softmax = SoftMax()
-    softmax_forward = softmax.forward(x)
-    softmax_backward = softmax.backward()
+    # softmax = SoftMax()
+    # softmax_forward = softmax.forward(x)
+    # softmax_backward = softmax.backward()
 
     fig, axes = plt.subplots(2, 2, figsize=(10, 8))
     axes[0, 0].plot(x, sigmoid_forward)
@@ -146,12 +146,12 @@ if __name__ == "__main__":
     axes[1, 0].grid()
     axes[1, 0].plot(x, relu_grad)
 
-    axes[1, 1].plot(x, softmax_forward)
-    axes[1, 1].set_title("Softmax")
-    axes[1, 1].set_xlabel("x")
-    axes[1, 1].set_ylabel("Softmax(x)")
-    axes[1, 1].grid()
-    axes[1, 1].plot(x, softmax_backward)
+    # axes[1, 1].plot(x, softmax_forward)
+    # axes[1, 1].set_title("Softmax")
+    # axes[1, 1].set_xlabel("x")
+    # axes[1, 1].set_ylabel("Softmax(x)")
+    # axes[1, 1].grid()
+    # axes[1, 1].plot(x, softmax_backward)
 
     plt.tight_layout()
     plt.show()

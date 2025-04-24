@@ -2,6 +2,8 @@ import numpy as np
 
 
 def one_hot_target(target_class: np.array, predicted_shape: tuple) -> np.array:
+    target_class = target_class.flatten()
+
     num_classes = predicted_shape[-1]
     num_samples = target_class.shape[0]
 

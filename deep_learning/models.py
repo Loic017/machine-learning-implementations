@@ -16,6 +16,8 @@ from torch.utils.data import DataLoader
 
 from utils import one_hot_target, assert_shape
 
+np.random.seed(42)
+
 
 class Model:
     def __init__(self, loss):
@@ -95,6 +97,7 @@ class Model:
         epochs,
         lr,
         batch_size,
+        one_hot=False,
         validation_data: tuple[np.ndarray, np.ndarray] = None,
         logging_predictions=False,
         test_set_logging: np.ndarray = None,
@@ -149,6 +152,7 @@ class Model:
             running_loss = 0
             train_epoch_predictions, test_epoch_predictions = [], []
             print(f"Training epoch {epoch}")
+
             for batch in dataloader:
                 x, y = batch
 
@@ -163,11 +167,8 @@ class Model:
                 # FORWARD PASS -> Expects shape [batch_size, features]
                 y_hat = self.forward(x)
 
-                # If y is not the same shape as y_hat, convert it to one-hot encoding
-
-                # if y_hat.shape != y.shape:
-                #     # y = one_hot_target(y, y_hat.shape)
-                #     y_hat.squeeze()
+                if one_hot:
+                    y = one_hot_target(y, y_hat.shape)
 
                 # Compute loss
                 loss = self.loss(y, y_hat)  # Loss
@@ -200,8 +201,8 @@ class Model:
                 all_train_predictions.append(train_epoch_predictions)
                 all_test_predictions.append(test_epoch_predictions)
 
-            print(f"Epoch {epoch} loss -> {running_loss / len(batch)}")
-            loss_graph["train"].append(running_loss / len(batch))
+            print(f"Epoch {epoch} loss -> {running_loss / len(dataloader)}")
+            loss_graph["train"].append(running_loss / len(dataloader))
 
             if validation_data is not None:
                 running_val_loss = 0
@@ -212,13 +213,15 @@ class Model:
                     y_val = y_val.detach().numpy()
 
                     y_hat = self.forward(x_val)
-                    if y_hat.shape != y_val.shape:
+
+                    if one_hot:
                         y_val = one_hot_target(y_val, y_hat.shape)
+
                     loss = self.loss(y_val, y_hat)
                     running_val_loss += loss
 
-                print(f"Validation loss -> {running_val_loss / len(batch)}")
-                loss_graph["val"].append(running_val_loss / len(batch))
+                print(f"Validation loss -> {running_val_loss / len(dataloader)}")
+                loss_graph["val"].append(running_val_loss / len(dataloader))
 
         if logging_predictions:
             return (
@@ -268,12 +271,12 @@ if __name__ == "__main__":
     print(f"Test shape: {x_test.shape}, {y_test.shape}")
 
     # Train Model
-    lr = 0.5
+    lr = 0.1
     loss, train_predictions, test_predictions = model.fit(
         (x_train, y_train),
         100,
         lr,
-        batch_size=32,
+        batch_size=5,
         logging_predictions=True,
         test_set_logging=x_test,
     )
