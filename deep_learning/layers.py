@@ -1,4 +1,5 @@
 import numpy as np
+import cupy as gnp
 import matplotlib.pyplot as plt
 import loss_functions as ls
 import activation_functions as af
@@ -6,7 +7,7 @@ import activation_functions as af
 from utils import assert_shape
 
 
-class Layer:  # from abc import ABC
+class Layer:
     def __init__(self):
         pass
 
@@ -142,7 +143,7 @@ class Conv2d(Layer):
 
 
 class MaxPool2d(Layer):
-    def __init__(self, kernel_size, stride=1, padding=0):
+    def __init__(self, kernel_size=2, stride=1, padding=0):
         super().__init__()
         self.kernel_size = kernel_size
         self.stride = stride
@@ -152,10 +153,60 @@ class MaxPool2d(Layer):
         return "MaxPool2d Layer"
 
     def forward(self, x):
-        return NotImplementedError
+        self.input = x
+        height, width = x.shape[2], x.shape[3]
+
+        batch, n_filters = x.shape[0], x.shape[1]
+        out_height = (height + 2 * self.padding - self.kernel_size) // self.stride + 1
+        out_width = (width + 2 * self.padding - self.kernel_size) // self.stride + 1
+
+        output = np.zeros((batch, n_filters, out_height, out_width))
+
+        if self.padding > 0:
+            x = np.pad(
+                x,
+                (
+                    (0, 0),
+                    (0, 0),
+                    (self.padding, self.padding),
+                    (self.padding, self.padding),
+                ),
+                mode="constant",
+                constant_values=0,
+            )
+            # (0, 0)                        No padding before or after the first axis (e.g., batch dimension).
+            # (0, 0)                        No padding before or after the second axis (e.g., channels dimension).
+            # (self.padding, self.padding)  Padding `self.padding` before and after along the third axis (e.g., height).
+            # (self.padding, self.padding)  Padding `self.padding` before and after along the fourth axis (e.g., width)
+
+        for i in range(out_height):
+            for j in range(out_width):
+                window_m = np.array(
+                    [
+                        [
+                            i * self.stride,
+                            (i * self.stride) + self.kernel_size,
+                        ],
+                        [
+                            j * self.stride,
+                            (j * self.stride) + self.kernel_size,
+                        ],
+                    ]
+                )
+
+                c_window = x[
+                    :,
+                    :,
+                    window_m[0, 0] : window_m[0, 1],
+                    window_m[1, 0] : window_m[1, 1],
+                ]
+
+                output[:, :, i, j] = gnp.max(c_window, axis=(2, 3))
+            return output
 
     def backward(self, prior_layer_grad):
-        return prior_layer_grad  # Is not learnable, so skip the backward pass
+
+        return NotImplementedError
 
 
 class Flatten(Layer):
@@ -169,7 +220,7 @@ class Flatten(Layer):
         return x.reshape(x.shape[0], -1)
 
     def backward(self, prior_layer_grad):
-        return prior_layer_grad # Is not learnable, so skip the backward pass
+        return prior_layer_grad  # Is not learnable, so skip the backward pass
 
 
 if __name__ == "__main__":
